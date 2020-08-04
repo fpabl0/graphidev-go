@@ -17,6 +17,7 @@ import (
 // For more information, see https://github.com/graphql/graphiql.
 type GraphiQL struct {
 	GraphqlURL string
+	HeaderMap  map[string]string
 }
 
 func (h GraphiQL) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -29,6 +30,13 @@ func (h GraphiQL) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h GraphiQL) getWebUI() []byte {
+	var headers string
+
+	for k, v := range h.HeaderMap {
+		headers += fmt.Sprintf("%q:%q,\n", k, v)
+	}
+	headers = headers[:len(headers)-1] // remove the last break line
+
 	resp := fmt.Sprintf(`
 	<!DOCTYPE html>
 	<html>
@@ -97,7 +105,8 @@ func (h GraphiQL) getWebUI() []byte {
 						method: "POST",
 						body: JSON.stringify(params),
 						headers: {
-							"Content-Type": "application/json"
+							"Content-Type": "application/json",
+							%s
 						}
 					}).then(function (resp) {
 						return resp.text();
@@ -116,6 +125,6 @@ func (h GraphiQL) getWebUI() []byte {
 			</script>
 		</body>
 	</html>
-	`, h.GraphqlURL)
+	`, h.GraphqlURL, headers)
 	return []byte(resp)
 }
